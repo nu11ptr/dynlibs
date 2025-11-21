@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process;
 
-use dynlibs::DynLibs;
+use dynlibs::{DynLibEntries, DynLibs};
 
 fn print_usage(program: &OsStr) {
     eprintln!("Usage: {} <binary>", program.display());
@@ -20,10 +20,24 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     let binary_path: PathBuf = args.nth(1).ok_or("No binary path provided")?.into();
     let dyn_libs = DynLibs::from_path(&binary_path)?;
+
     println!("Binary type: {}\n", dyn_libs.binary_type);
     println!("Dynamic libraries:");
-    for lib in dyn_libs.dyn_libs {
-        println!("\t{}", lib);
+
+    match dyn_libs.dyn_libs {
+        DynLibEntries::SingleArch(libs) => {
+            for lib in libs {
+                println!("    {}", lib);
+            }
+        }
+        DynLibEntries::MultiArch(entries) => {
+            for entry in entries {
+                println!("    Index {}:", entry.index);
+                for lib in entry.dyn_libs {
+                    println!("        {}", lib);
+                }
+            }
+        }
     }
     Ok(())
 }
