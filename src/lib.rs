@@ -4,6 +4,7 @@ use goblin::{
     Object,
     mach::{Mach, MultiArch, SingleArch},
 };
+use regex::Regex;
 
 /// An ELF binary
 pub const ELF: &str = "ELF";
@@ -14,37 +15,99 @@ pub const MACH_O: &str = "Mach-O";
 /// A Mach-O (Fat) binary
 pub const MACH_O_FAT: &str = "Mach-O (Fat)";
 
+/// A collection of dynamic libraries and whether they matched the provided regexes
+#[derive(Default)]
+pub struct DynLibMatches {
+    /// The dynamic libraries that matched the regexes
+    pub matched: Vec<String>,
+    /// The dynamic libraries that did not match the regexes
+    pub unmatched: Vec<String>,
+}
+
+impl DynLibMatches {
+    fn add_matched(&mut self, lib: &str) {
+        self.matched.push(lib.to_string());
+    }
+
+    fn add_unmatched(&mut self, lib: &str) {
+        self.unmatched.push(lib.to_string());
+    }
+
+    /// Returns true if all the dynamic libraries matched the regexes
+    pub fn all_matched(&self) -> bool {
+        self.unmatched.is_empty()
+    }
+}
+
+/// A collection of dynamic libraries
+pub struct DynLibs(Vec<String>);
+
+impl DynLibs {
+    /// Builds a collection of dynamic libraries that matched or did not match the provided regexes
+    pub fn build_matches(&self, dyn_lib_regexes: &[Regex]) -> DynLibMatches {
+        let mut matches = DynLibMatches::default();
+        let mut dyn_lib_regexes = dyn_lib_regexes.to_vec();
+
+        for lib in self.0.iter() {
+            let regexes = dyn_lib_regexes.clone();
+
+            let mut matched = false;
+            for (idx, regex) in regexes.iter().enumerate() {
+                if regex.is_match(lib) {
+                    matches.add_matched(lib);
+                    // Don't use a regex twice
+                    dyn_lib_regexes.remove(idx);
+                    matched = true;
+                    break;
+                }
+            }
+            if !matched {
+                matches.add_unmatched(lib);
+            }
+        }
+
+        matches
+    }
+
+    /// Returns an iterator over the dynamic libraries
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+        self.0.iter()
+    }
+}
+
 // TODO: Add a name for the architecture
 /// The dynamic libraries for a single architecture in multi-architecture binaries
 pub struct DynLibEntry {
     /// The index of the architecture in the multi-architecture binary
     pub index: usize,
     /// The dynamic libraries of this architecture
-    pub dyn_libs: Vec<String>,
+    pub dyn_libs: DynLibs,
 }
 
 /// One or more collections of dynamic libraries in a binary
 pub enum DynLibEntries {
     /// The binary is a single architecture, so it has only a single collection of dynamic libraries
-    SingleArch(Vec<String>),
+    SingleArch(DynLibs),
     /// The binary is a multi-architecture binary, so it has multiple collections of dynamic libraries
     MultiArch(Vec<DynLibEntry>),
 }
 
-/// A collection of dynamic libraries in a binary
-pub struct DynLibs {
+/// An executable binary and its dynamic libraries
+pub struct Executable {
     /// The type of binary
     pub binary_type: &'static str,
     /// The dynamic libraries in the binary
     pub dyn_libs: DynLibEntries,
 }
 
-impl DynLibs {
-    fn parse_libs(libs: &[&str]) -> Vec<String> {
-        libs.iter()
-            .filter(|&&lib| lib != "self")
-            .map(|lib| lib.to_string())
-            .collect()
+impl Executable {
+    fn parse_libs(libs: &[&str]) -> DynLibs {
+        DynLibs(
+            libs.iter()
+                .filter(|&&lib| lib != "self")
+                .map(|lib| lib.to_string())
+                .collect(),
+        )
     }
 
     fn parse_single_entry(libs: &[&str]) -> DynLibEntries {

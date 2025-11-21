@@ -13,3 +13,4 @@ edition = "2024"
 
 [dependencies]
 goblin = "0.10"
+regex = "1"
