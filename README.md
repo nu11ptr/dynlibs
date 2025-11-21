@@ -7,7 +7,7 @@ A simple, cross-platform program to display dynamic libraries used by an executa
 
 I found it a pain when writing cross platform programs to figure out which dynamic libraries I was linking with. On macOS, there is `otool` and `objdump`, on linux, `ldd`, and on Windows, `dumpbin.exe`. Once I discovered the awesome `goblin` crate, I was surprised no one had created a simple program to just dump the dynamic libraries used by an executable, so I created one.
 
-Additionally, I wanted a simple way in my CICD pipeline to ensure I didn't accidently add any dynamic library requirements that I wasn't expecting, so I added the `--only` flag to allow validating that only the expected dynamic libraries are required.
+Additionally, I wanted a simple way in my CICD pipeline to ensure I didn't accidentally add any dynamic library requirements that I wasn't expecting, so I added the `--only` flag to allow validating that only the expected dynamic libraries are required.
 
 > NOTE: There aren't many surprises here, but if you aren't aware, `ldd` looks up transitive dependencies, but this utility does not. This means this utility lists only the direct dependencies of an executable, which is consistent with the other utilities listed above, and makes this program consistent across executable types and platforms.
 
