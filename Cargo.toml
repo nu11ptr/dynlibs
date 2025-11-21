@@ -1,6 +1,14 @@
 [package]
 name = "dynlibs"
 version = "0.1.0"
+authors = ["Scott Meeuwsen <smeeuwsen@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A simple, cross-platform program to display dynamic libraries used by an executable"
+repository = "https://github.com/nu11ptr/dynlibs"
+documentation = "https://docs.rs/dynlibs"
+keywords = ["dynlib", "dll", "elf", "mach", "pe"]
+categories = ["command-line-utilities"]
+readme = "README.md"
 edition = "2024"
 
 [dependencies]
